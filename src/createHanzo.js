@@ -97,11 +97,11 @@ export default function createHanzo(createOpts) {
      * if view.lazy is true, means it's a async-load view
      * use react-actions to register reducers
      */
-    function loadModule(module, resolve) {
+    function loadModule(module, resolve,item) {
       this._models.push(module.models)
 
       Object.keys(module.views).map((view) => {
-        if(this._views[view] && this._views[view].lazy) {
+        if(this._views[view] && this._views[view].lazy && view ===item) {
           resolve(module.views[view])
         }
       })
@@ -159,7 +159,7 @@ export default function createHanzo(createOpts) {
           return new Promise((resolve, reject) => {
             if(this._views[item].lazy) {
               callback((module) => {
-                loadModule.call(me, module, resolve)
+                loadModule.call(me, module, resolve,item)
                 this._store.replaceReducer(getReducer.call(this))
               })
             } else {
@@ -276,26 +276,6 @@ export default function createHanzo(createOpts) {
           }
         } 
       }
-    }
-
-    ////////////////////////////////////
-    // Helpers
-
-    function getProvider(store, app, scenes) {
-      let { onUpdate } = app._routerProps
-      let Router = require('../router').Router      
-      return () => (
-        <Provider store={store}>
-          <Router history={app._history} {...app._routerProps} onUpdate={function() {return onUpdate && onUpdate.call(this, app._store)}}>
-            { scenes }
-          </Router>
-        </Provider>
-      );
-    }
-
-    function render(container, store, app, scenes) {
-      const ReactDOM = require('react-dom');
-      ReactDOM.render(React.createElement(getProvider(store, app, scenes)), container);
     }
   }
 }

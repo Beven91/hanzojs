@@ -1,4 +1,6 @@
-# hanzojs
+# hanzojs-follower
+
+- fork from [hanzojs](https://github.com/hanzojs)
 
 - 借鉴[dva.js](https://github.com/dvajs/dva)，在dva.js的基础上去掉以及定制了一些功能，用于redux和react框架的集成，目标是将繁琐的redux开发尽量简化，易于上手
 - 支持react-native，react，以及同构react，一个为实现三端融合开发的基础框架
