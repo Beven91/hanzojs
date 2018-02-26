@@ -33,5 +33,5 @@
     "pub": "sh ./scripts/publish.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "version": "1.0.5"
+  "version": "1.0.6"
 }

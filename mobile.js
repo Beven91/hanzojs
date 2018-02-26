@@ -2,6 +2,7 @@ import { connect } from 'react-redux'
 import { createAction } from 'redux-actions'
 import { bindActionCreators } from 'redux'
 import GlobalContext from './src/global'
+import React from 'react';
 
 // CommonJS标准和ES6标准在组件的封装上是有差异的
 //
@@ -25,6 +26,7 @@ module.exports = require('./src/mobile');
 module.exports.connect = function(state, model) {
   const actionCreators = {}
   let _handlers = []
+  let connector = null;
   if(model) {
       if(model.handlers && Array.isArray(model.handlers)) {
         _handlers = _handlers.concat(model.handlers)
@@ -55,8 +57,38 @@ module.exports.connect = function(state, model) {
       }
     })
     const mapDispatchToProps = (dispatch) => bindActionCreators(actionCreators, dispatch)
-    return connect(state, mapDispatchToProps)
+    connector = connect(stateOn, mapDispatchToProps)
   } else {
-    return connect(state)
+    connector = connect(stateOn)
+  }
+
+  let isReset = false;
+
+  function stateOn(stateData){
+    if(isReset){
+      isReset = false;
+      initialState(stateData);
+    }
+    return state.apply(this,arguments);
+  }
+
+  function initialState(state){
+    const name = model.namespace.split('/').join('.');
+    const calc = new Function('state,data',`state.${name} = data`);
+    calc(state,model.state);
+  }
+
+  return function(Component){
+    const ConnectComponent = connector(Component)
+    return class extends React.Component{
+      constructor(props){
+        super(props);
+        isReset = true;
+      }
+      static WrappedComponent = ConnectComponent.WrappedComponent;
+      render(){
+        return (<ConnectComponent {...this.props}></ConnectComponent>)
+      }
+    }
   }
 }
