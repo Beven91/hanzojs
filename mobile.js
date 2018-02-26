@@ -83,7 +83,7 @@ module.exports.connect = function(state, model) {
     return class extends React.Component{
       constructor(props){
         super(props);
-        isReset = true;
+        isReset = ConnectComponent.WrappedComponent.shouldResetRedux!==true;
       }
       static WrappedComponent = ConnectComponent.WrappedComponent;
       render(){
