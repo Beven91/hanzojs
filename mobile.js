@@ -23,30 +23,30 @@ import React from 'react';
 // });
 
 module.exports = require('./src/mobile');
-module.exports.connect = function(state, model) {
+module.exports.connect = function (state, model) {
   const actionCreators = {}
   let _handlers = []
   let connector = null;
-  if(model) {
-      if(model.handlers && Array.isArray(model.handlers)) {
-        _handlers = _handlers.concat(model.handlers)
-      }
-      if(model.publicHandlers && Array.isArray(model.publicHandlers)) {
-        _handlers = _handlers.concat(model.publicHandlers)
-      }
+  if (model) {
+    if (model.handlers && Array.isArray(model.handlers)) {
+      _handlers = _handlers.concat(model.handlers)
+    }
+    if (model.publicHandlers && Array.isArray(model.publicHandlers)) {
+      _handlers = _handlers.concat(model.publicHandlers)
+    }
   }
-  if(_handlers.length > 0) {
+  if (_handlers.length > 0) {
     _handlers.map((key) => {
-      if(key.action) {
-        if(key.validate) {
+      if (key.action) {
+        if (key.validate) {
           actionCreators[key.name] = createAction(model.namespace + '/' + key.name, key.action, key.validate)
         } else {
           actionCreators[key.name] = createAction(model.namespace + '/' + key.name, key.action)
         }
-      } else if(key.handler) {
+      } else if (key.handler) {
         let globalHandler = GlobalContext.getHandler(key.handler)
-        if(globalHandler) {  
-          if(key.validate) {
+        if (globalHandler) {
+          if (key.validate) {
             actionCreators[key.name] = createAction(model.namespace + '/' + key.name, globalHandler, key.validate)
           } else {
             actionCreators[key.name] = createAction(model.namespace + '/' + key.name, globalHandler)
@@ -64,29 +64,32 @@ module.exports.connect = function(state, model) {
 
   let isReset = false;
 
-  function stateOn(stateData){
-    if(isReset){
+  function stateOn(stateData) {
+    if (isReset) {
       isReset = false;
       initialState(stateData);
     }
-    return state.apply(this,arguments);
+    return state.apply(this, arguments);
   }
 
-  function initialState(state){
+  function initialState(state) {
     const name = model.namespace.split('/').join('.');
-    const calc = new Function('state,data',`state.${name} = data`);
-    calc(state,model.state);
+    if (name in state) {
+      return state[name] = model.state;
+    }
+    const calc = new Function('state,data', `state.${name} = data`);
+    calc(state, model.state);
   }
 
-  return function(Component){
+  return function (Component) {
     const ConnectComponent = connector(Component)
-    return class extends React.Component{
-      constructor(props){
+    return class extends React.Component {
+      constructor(props) {
         super(props);
-        isReset = ConnectComponent.WrappedComponent.shouldResetRedux!==true;
+        isReset = ConnectComponent.WrappedComponent.shouldResetRedux !== true;
       }
       static WrappedComponent = ConnectComponent.WrappedComponent;
-      render(){
+      render() {
         return (<ConnectComponent {...this.props}></ConnectComponent>)
       }
     }
