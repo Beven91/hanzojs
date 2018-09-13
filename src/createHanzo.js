@@ -73,18 +73,21 @@ export default function createHanzo(createOpts) {
      * registerModule(require('./moduleA')) => sync-load module A
      * registerModule((callback, name) => callback(require('./moduleA'), ['moduleA'])) => async-load module A
      */
-    function registerModule(module) {
+    function registerModule(module, refresh) {
       let me = this
-      if(isPlainObject(module)) {
+      if (isPlainObject(module)) {
         loadModule.call(me, module)
-      } else if(typeof module === 'function') {
+      } else if (typeof module === 'function') {
         module((callback, name) => {
-          if(typeof callback === 'function') {
+          if (typeof callback === 'function') {
             lazyload.call(me, callback, name)
-          } else if(isPlainObject(callback)){
+          } else if (isPlainObject(callback)) {
             loadModule.call(me, callback)
           }
-        }) 
+        })
+      }
+      if (refresh) {
+        this._store.replaceReducer(getReducer.call(this))
       }
     }
 
@@ -97,11 +100,11 @@ export default function createHanzo(createOpts) {
      * if view.lazy is true, means it's a async-load view
      * use react-actions to register reducers
      */
-    function loadModule(module, resolve,item) {
+    function loadModule(module, resolve, item) {
       this._models.push(module.models)
 
       Object.keys(module.views).map((view) => {
-        if(this._views[view] && this._views[view].lazy && view ===item) {
+        if (this._views[view] && this._views[view].lazy && view === item) {
           resolve(module.views[view])
         }
       })
@@ -111,11 +114,11 @@ export default function createHanzo(createOpts) {
         ...module.views
       }
 
-      if(isPlainObject(module.models)) {
+      if (isPlainObject(module.models)) {
         let Actions = {}
         let namespace = module.models.namespace.replace(/\/$/g, ''); // events should be have the namespace prefix
         Object.keys(module.models.reducers).map((key) => {
-          if(key.startsWith('/')) { // starts with '/' means global events
+          if (key.startsWith('/')) { // starts with '/' means global events
             Actions[key.substr(1)] = module.models.reducers[key];
           } else {
             Actions[namespace + '/' + key] = module.models.reducers[key];
@@ -126,7 +129,7 @@ export default function createHanzo(createOpts) {
         _mergeReducers(this._reducers, _arr, _temp)
       }
 
-      if(module.publicHandlers && Array.isArray(module.publicHandlers)) {
+      if (module.publicHandlers && Array.isArray(module.publicHandlers)) {
         module.publicHandlers.map((item) => {
           GlobalContext.registerHandler(namespace.replace(/\//g, '.') + '.' + item.name, item.action)
         })
@@ -139,12 +142,12 @@ export default function createHanzo(createOpts) {
      * user/login, user/info -> user:{ login, info }
      */
     function _mergeReducers(obj, arr, res) {
-      if(arr.length > 1) {
-        let hierachy = arr.splice(0,1)[0]
+      if (arr.length > 1) {
+        let hierachy = arr.splice(0, 1)[0]
         obj[hierachy] = obj[hierachy] || {}
         _mergeReducers(obj[hierachy], arr, res)
       } else {
-        obj[arr[0]] =  res || {}
+        obj[arr[0]] = res || {}
       }
     }
 
@@ -157,9 +160,9 @@ export default function createHanzo(createOpts) {
       name.map((item) => {
         this._views[item] = () => {
           return new Promise((resolve, reject) => {
-            if(this._views[item].lazy) {
+            if (this._views[item].lazy) {
               callback((module) => {
-                loadModule.call(me, module, resolve,item)
+                loadModule.call(me, module, resolve, item)
                 this._store.replaceReducer(getReducer.call(this))
               })
             } else {
@@ -176,16 +179,16 @@ export default function createHanzo(createOpts) {
       this._routerProps = props || {}
     }
 
-     /**
-     * create the reducers
-     */
+    /**
+    * create the reducers
+    */
     function getReducer() {
       // extra reducers
       const extraReducers = plugin.get('extraReducers');
 
       const mergeReducers = deepmerge.all([this._reducers, extraReducers])
-      for(let k in mergeReducers) {
-        if(typeof mergeReducers[k] === 'object') {
+      for (let k in mergeReducers) {
+        if (typeof mergeReducers[k] === 'object') {
           mergeReducers[k] = combineReducers(mergeReducers[k])
         }
       }
@@ -215,14 +218,14 @@ export default function createHanzo(createOpts) {
     function getStore() {
       let middlewares = plugin.get('onAction');
 
-      if(!mobile) {
+      if (!mobile) {
         middlewares.push(routerMiddleware(history))
       }
 
       let enhancer = applyMiddleware(...middlewares)
       if (typeof __DEV__ !== 'undefined' && __DEV__) { // dev mode
         const devTools = plugin.get('dev') || ((noop) => noop)
-        if(devTools.apply) {
+        if (devTools.apply) {
           enhancer = compose(
             applyMiddleware(...middlewares),
             devTools
@@ -231,7 +234,7 @@ export default function createHanzo(createOpts) {
       }
 
       const createAppStore = enhancer(createStore);
-      
+
       this._store = Object.assign(this._store || {}, createAppStore(getReducer.call(this), initialState));
       return this._store
     }
@@ -251,7 +254,7 @@ export default function createHanzo(createOpts) {
       // setup history
       if (setupHistory) setupHistory.call(this, history);
 
-      if(mobile) {
+      if (mobile) {
         const me = this
         const AppNavigator = me._router; // react-navigation
         let store = getStore.call(me)
@@ -272,9 +275,9 @@ export default function createHanzo(createOpts) {
               <Provider store={store}>
                 <AppWithNavigationState />
               </Provider>
-            ) 
+            )
           }
-        } 
+        }
       }
     }
   }
