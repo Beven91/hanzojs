@@ -3,6 +3,7 @@ import { createAction } from 'redux-actions'
 import { bindActionCreators } from 'redux'
 import GlobalContext from './src/global'
 import React from 'react';
+import createHanzo from './src/mobile';
 
 // CommonJS标准和ES6标准在组件的封装上是有差异的
 //
@@ -22,8 +23,12 @@ import React from 'react';
 //   value: true
 // });
 
-module.exports = require('./src/mobile');
-module.exports.connect = function (state, model) {
+module.exports = createHanzo(connect2);
+module.exports.connect = connect2;
+function connect2(state, model) {
+  if (model && model.multiple) {
+    return (a) => a;
+  }
   const actionCreators = {}
   let _handlers = []
   let connector = null;

@@ -75,7 +75,9 @@ export default function createHanzo(createOpts) {
      */
     function registerModule(module, refresh) {
       let me = this
-      if (isPlainObject(module)) {
+      if (isPlainObject(module) && module.models.multiple) {
+        registerMultiple.call(me, module)
+      } else if (isPlainObject(module)) {
         loadModule.call(me, module)
       } else if (typeof module === 'function') {
         module((callback, name) => {
@@ -88,6 +90,59 @@ export default function createHanzo(createOpts) {
       }
       if (refresh) {
         this._store.replaceReducer(getReducer.call(this))
+      }
+    }
+
+    function registerMultiple(module, resolve, item) {
+      const views = module.views || [];
+      const me = this;
+      const holder = {
+        models: {
+          namespace: module.models.namespace,
+          state: {},
+          reducers: {
+          },
+        },
+        views: {
+        }
+      }
+      Object.keys(views).forEach((view) => {
+        holder.views[view] = MultipleView(me, view, views[view], module)
+      })
+      loadModule.call(this, holder, resolve, item)
+    }
+
+    function MultipleView(me, viewName, OView, module) {
+      const models = module.models;
+      let identifer = 0;
+      return class MultiConnect extends React.Component {
+        constructor(props) {
+          super(props);
+          const id = identifer++;
+          const model = {
+            namespace: `${models.namespace}_${id}`,
+            handlers: [...models.handlers],
+            state: {
+              ...(models.state || {})
+            },
+            reducers: {
+              ...(models.reducers || {})
+            }
+          }
+          const views = {}
+          this.View = views[`${viewName}-${id}`] = createOpts.connect((state) => ({ ...state[model.namespace] }), model)(OView);
+          registerModule.call(me, {
+            models: model,
+            views: views
+          }, true);
+        }
+
+        render() {
+          const View = this.View;
+          return (
+            <View {...this.props} />
+          );
+        }
       }
     }
 
@@ -162,7 +217,11 @@ export default function createHanzo(createOpts) {
           return new Promise((resolve, reject) => {
             if (this._views[item].lazy) {
               callback((module) => {
-                loadModule.call(me, module, resolve, item)
+                if (module.models.multiple) {
+                  registerMultiple.call(me, module, resolve, item)
+                } else {
+                  loadModule.call(me, module, resolve, item)
+                }
                 this._store.replaceReducer(getReducer.call(this))
               })
             } else {

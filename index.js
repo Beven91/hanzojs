@@ -2,6 +2,7 @@ import { connect } from 'react-redux'
 import { createAction } from 'redux-actions'
 import { bindActionCreators } from 'redux'
 import GlobalContext from './src/global'
+import createHanzo from './src/index';
 
 // CommonJS标准和ES6标准在组件的封装上是有差异的
 //
@@ -21,30 +22,34 @@ import GlobalContext from './src/global'
 //   value: true
 // });
 
-module.exports = require('./src');
-module.exports.connect = function(state, model) {
+module.exports = createHanzo(connect2);
+module.exports.connect = connect2;
+function connect2(state, model) {
   const actionCreators = {}
   let _handlers = []
-  if(model) {
-      if(model.handlers && Array.isArray(model.handlers)) {
-        _handlers = _handlers.concat(model.handlers)
-      }
-      if(model.publicHandlers && Array.isArray(model.publicHandlers)) {
-        _handlers = _handlers.concat(model.publicHandlers)
-      }
+  if (model && model.multiple) {
+    return (a) => a;
   }
-  if(_handlers.length > 0) {
+  if (model) {
+    if (model.handlers && Array.isArray(model.handlers)) {
+      _handlers = _handlers.concat(model.handlers)
+    }
+    if (model.publicHandlers && Array.isArray(model.publicHandlers)) {
+      _handlers = _handlers.concat(model.publicHandlers)
+    }
+  }
+  if (_handlers.length > 0) {
     _handlers.map((key) => {
-      if(key.action) {
-        if(key.validate) {
+      if (key.action) {
+        if (key.validate) {
           actionCreators[key.name] = createAction(model.namespace + '/' + key.name, key.action, key.validate)
         } else {
           actionCreators[key.name] = createAction(model.namespace + '/' + key.name, key.action)
         }
-      } else if(key.handler) {
+      } else if (key.handler) {
         let globalHandler = GlobalContext.getHandler(key.handler)
-        if(globalHandler) {  
-          if(key.validate) {
+        if (globalHandler) {
+          if (key.validate) {
             actionCreators[key.name] = createAction(model.namespace + '/' + key.name, globalHandler, key.validate)
           } else {
             actionCreators[key.name] = createAction(model.namespace + '/' + key.name, globalHandler)

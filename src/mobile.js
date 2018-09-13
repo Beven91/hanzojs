@@ -1,5 +1,8 @@
 import createHanzo from './createHanzo';
 
-export default createHanzo({
-  mobile: true,
-});
+export default function (connect) {
+  return createHanzo({
+    mobile: true,
+    connect: connect
+  })
+};
